@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Uncrumpled — Carousel Production Dashboard · 2026-04-29</title>
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --ink-soft: #4a4a6a;
+    --bg: #faf8ff;
+    --card: #ffffff;
+    --line: #e8e4f5;
+    --purple: #7c4dff;
+    --purple-soft: #ede5ff;
+    --purple-deep: #4a2999;
+    --pink: #ff6b9d;
+    --green: #16a34a;
+    --green-soft: #dcfce7;
+    --red: #dc2626;
+    --red-soft: #fee2e2;
+    --yellow: #f59e0b;
+    --yellow-soft: #fef3c7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.55; }
+  .container { max-width: 1280px; margin: 0 auto; padding: 48px 32px; }
+
+  header { margin-bottom: 40px; }
+  .badge { display: inline-block; background: var(--purple-soft); color: var(--purple-deep); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 14px; text-transform: uppercase; }
+  h1 { font-size: 44px; font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; line-height: 1.1; background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .sub { font-size: 16px; color: var(--ink-soft); max-width: 800px; }
+
+  .ref-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 40px; }
+  @media (max-width: 1000px) { .ref-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .ref-grid { grid-template-columns: 1fr; } }
+
+  .ref { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .ref h3 { font-size: 12px; font-weight: 800; color: var(--purple-deep); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--purple-soft); }
+  .ref ul { list-style: none; }
+  .ref li { font-size: 13px; color: var(--ink); padding: 4px 0; line-height: 1.5; }
+  .ref li::before { content: "→ "; color: var(--purple); font-weight: 700; }
+  .ref .pill { display: inline-block; background: var(--purple-soft); color: var(--purple-deep); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-right: 4px; margin-bottom: 4px; }
+
+  .surface-bar { display: flex; height: 36px; border-radius: 8px; overflow: hidden; margin-top: 8px; border: 1px solid var(--line); }
+  .surface-bar > div { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; }
+  .sb-brain { background: #7c4dff; }
+  .sb-out { background: #ff6b9d; }
+  .sb-house { background: #f59e0b; }
+  .sb-vs { background: #16a34a; }
+  .sb-pov { background: #4a2999; }
+  .sb-empty { background: #d1d5db; color: #6b7280 !important; }
+
+  section.carousels { margin-top: 24px; }
+  .section-head { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 3px solid var(--purple); }
+  .section-head .num { background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%); color: white; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; }
+  .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+
+  .carousel-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 28px; margin-bottom: 20px; }
+  .carousel-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .meta-pill { display: inline-block; padding: 4px 11px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .mp-brain { background: #ede5ff; color: #4a2999; }
+  .mp-out { background: #fce7f3; color: #be185d; }
+  .mp-house { background: #fef3c7; color: #92400e; }
+  .mp-vs { background: #dcfce7; color: #166534; }
+  .mp-pov { background: #ddd6fe; color: #5b21b6; }
+  .mp-slides { background: #f3f4f6; color: #374151; }
+  .mp-product { background: #dbeafe; color: #1e40af; }
+
+  .carousel-card h3 { font-size: 22px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+
+  .slides-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
+  .slide { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; position: relative; min-height: 130px; }
+  .slide .slide-num { position: absolute; top: 10px; right: 10px; background: var(--purple); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; }
+  .slide .slide-tag { display: inline-block; background: var(--purple-soft); color: var(--purple-deep); padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .slide .slide-tag.product { background: #dbeafe; color: #1e40af; }
+  .slide .slide-tag.signoff { background: #dcfce7; color: #166534; }
+  .slide p { font-size: 13px; color: var(--ink); line-height: 1.5; }
+  .slide p em { color: var(--ink-soft); font-style: italic; display: block; margin-top: 4px; }
+
+  .extra-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+  @media (max-width: 700px) { .extra-row { grid-template-columns: 1fr; } }
+  .extra-block h4 { font-size: 11px; font-weight: 800; color: var(--purple-deep); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .extra-block p, .extra-block li { font-size: 13px; color: var(--ink-soft); line-height: 1.55; }
+  .extra-block ul { list-style: none; padding: 0; }
+  .extra-block li { padding: 2px 0; padding-left: 14px; position: relative; }
+  .extra-block li::before { content: "•"; color: var(--purple); position: absolute; left: 0; font-weight: 700; }
+
+  .caption { background: var(--purple-soft); border-left: 3px solid var(--purple); padding: 10px 14px; border-radius: 6px; margin-top: 10px; font-size: 13px; color: var(--ink); font-style: italic; }
+  .caption strong { font-style: normal; color: var(--purple-deep); margin-right: 6px; }
+
+  .checklist { background: var(--card); border: 2px solid var(--purple); border-radius: 12px; padding: 24px; margin-top: 32px; }
+  .checklist h3 { color: var(--purple-deep); font-size: 18px; margin-bottom: 14px; }
+  .checklist-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .checklist-item:last-child { border-bottom: none; }
+  .check { width: 18px; height: 18px; border: 2px solid var(--purple); border-radius: 3px; flex-shrink: 0; margin-top: 2px; }
+
+  .next-up { background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%); color: white; border-radius: 16px; padding: 28px; margin-top: 24px; }
+  .next-up h3 { color: white; font-size: 20px; margin-bottom: 12px; }
+  .next-up ul { list-style: none; }
+  .next-up li { padding: 6px 0; font-size: 14px; padding-left: 22px; position: relative; }
+  .next-up li::before { content: "▸"; color: rgba(255,255,255,0.8); position: absolute; left: 0; }
+  .next-up li strong { color: white; }
+
+  footer { margin-top: 50px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <span class="badge">Production Dashboard · 2026-04-29</span>
+  <h1>Uncrumpled — Carousel Library</h1>
+  <p class="sub">7 carousels locked, ready to design + ship. All copy approved by Ann. Designer: pull each card, paste into Canva template, swap visuals. Slide order = post order. Final slide = sign-off + bio nudge.</p>
+</header>
+
+<!-- REFERENCE GRID -->
+<div class="ref-grid">
+
+  <div class="ref">
+    <h3>Voice Rules</h3>
+    <ul>
+      <li><strong>"Un-"</strong> language locked</li>
+      <li>"Spray" not steam/iron</li>
+      <li>Founder POV (Ann)</li>
+      <li>Validation, not correction</li>
+      <li>Max 2 lines text per slide</li>
+      <li>No perfection / scientific words</li>
+    </ul>
+  </div>
+
+  <div class="ref">
+    <h3>Sign-off Bank (rotate)</h3>
+    <ul>
+      <li>Spray. Smooth. Done.</li>
+      <li>They call it Type C. We call it Certified Chaos.</li>
+      <li>Certified Chaos. No iron required.</li>
+      <li>You're not lazy. You're optimised.</li>
+      <li>Welcome to Certified Chaos.</li>
+      <li>Drop your version 👇</li>
+    </ul>
+  </div>
+
+  <div class="ref">
+    <h3>Slide Cap</h3>
+    <ul>
+      <li>Default: <strong>5 slides</strong></li>
+      <li>Stretch: 6-7 max</li>
+      <li>Slide 1 = hook + content #1</li>
+      <li>Last slide = sign-off + nudge</li>
+      <li>Bigger ideas → Part 1 / Part 2</li>
+      <li>Product slot at #3 (when fits)</li>
+    </ul>
+  </div>
+
+  <div class="ref">
+    <h3>Surface Mix · Phase 1</h3>
+    <ul>
+      <li>🧠 Brain · 22% target</li>
+      <li>🚶 Out-of-house · 22% target</li>
+      <li>🪑 House · 22% target (rationed)</li>
+      <li>🪞 Type C vs B · 17% target</li>
+      <li>📣 Brand POV · 17% target</li>
+    </ul>
+    <div class="surface-bar" style="margin-top: 12px;">
+      <div class="sb-brain" style="flex: 3;">🧠 3</div>
+      <div class="sb-out" style="flex: 2;">🚶 2</div>
+      <div class="sb-house" style="flex: 1;">🪑 1</div>
+      <div class="sb-pov" style="flex: 1;">📣 1</div>
+      <div class="sb-empty" style="flex: 0.4;">vs 0</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CAROUSELS -->
+<section class="carousels">
+  <div class="section-head">
+    <div class="num">7</div>
+    <h2>Locked Carousels — Ready for Design</h2>
+  </div>
+
+  <!-- #1 LIES -->
+  <div class="carousel-card">
+    <div class="carousel-meta">
+      <span class="meta-pill mp-brain">🧠 Brain Chaos</span>
+      <span class="meta-pill mp-slides">5 slides</span>
+    </div>
+    <h3>#1 — Lies I tell myself (Part 1)</h3>
+    <div class="slides-grid">
+      <div class="slide">
+        <div class="slide-num">1</div>
+        <span class="slide-tag">Hook + #1</span>
+        <p>Lies I tell myself as a Certified Chaos:<br><br>"This mess doesn't annoy me."<em>— haunts me at 2am.</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">2</div>
+        <p>"I'll text her back in a sec."<em>— she sent it Tuesday. It's Sunday.</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">3</div>
+        <p>"5 minutes!"<em>— was 45 minutes ago.</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">4</div>
+        <p>"I have nothing to wear."<em>— 2 wardrobes + The Chair™. Both full.</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">5</div>
+        <span class="slide-tag signoff">Sign-off</span>
+        <p>"Just one episode."<em>— season 3, episode 4, 2:14am. Part 2 coming. Comment yours 👇</em></p>
+      </div>
+    </div>
+    <div class="caption"><strong>Caption:</strong> Part 1. Drop yours below — funniest go in part 2 👇</div>
+    <div class="extra-row">
+      <div class="extra-block">
+        <h4>Design notes</h4>
+        <ul>
+          <li>Text-only carousel. Canva template friendly</li>
+          <li>Italics for the "reality undercut" line</li>
+          <li>Slide 1 = quote in larger text, hook prefix smaller</li>
+          <li>No photos required</li>
+        </ul>
+      </div>
+      <div class="extra-block">
+        <h4>Saved for Part 2</h4>
+        <ul>
+          <li>"Just 1 more rep." — set 3 ago.</li>
+          <li>"I work better under pressure." — it was my pressure.</li>
+          <li>+ best comments from Part 1 audience</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- #2 THINGS I DON'T DO -->
+  <div class="carousel-card">
+    <div class="carousel-meta">
+      <span class="meta-pill mp-pov">📣 Brand POV</span>
+      <span class="meta-pill mp-slides">5 slides</span>
+      <span class="meta-pill mp-product">Product slot · #3</span>
+    </div>
+    <h3>#2 — Things I don't do, by a Certified Chaos</h3>
+    <div class="slides-grid">
+      <div class="slide">
+        <div class="slide-num">1</div>
+        <span class="slide-tag">Hook + #1</span>
+        <p>Things I don't do, by a Certified Chaos:<br><br>1. Answer a call from a number I don't know.<em>(and even then, questionable.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">2</div>
+        <p>2. 5am morning routines.</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">3</div>
+        <span class="slide-tag product">Product anchor</span>
+        <p>3. Iron. Obviously.</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">4</div>
+        <p>4. Open mail the day it arrives.</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">5</div>
+        <span class="slide-tag signoff">Sign-off</span>
+        <p>5. Watch just one episode.<em>It's binge or nothing. What else don't you do 👇</em></p>
+      </div>
+    </div>
+    <div class="caption"><strong>Caption:</strong> What's on yours 👇 going in part 2.</div>
+    <div class="extra-row">
+      <div class="extra-block">
+        <h4>Design notes</h4>
+        <ul>
+          <li>Numbered manifesto-style — bold numbers, lighter copy below</li>
+          <li>Slide 3 (iron) gets visual emphasis — biggest type</li>
+          <li>Text-only, no photos</li>
+        </ul>
+      </div>
+      <div class="extra-block">
+        <h4>Why this works</h4>
+        <ul>
+          <li>Iron at slot 3 = soft product anchor mid-list (rule)</li>
+          <li>Anti-establishment LD energy</li>
+          <li>Save-bait: comment-yours engages community</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- #3 TYPE C THINGS IN HOUSE -->
+  <div class="carousel-card">
+    <div class="carousel-meta">
+      <span class="meta-pill mp-house">🪑 House</span>
+      <span class="meta-pill mp-slides">5 slides</span>
+      <span class="meta-pill mp-product">Product slot · #3</span>
+    </div>
+    <h3>#3 — Type C things in my house</h3>
+    <div class="slides-grid">
+      <div class="slide">
+        <div class="slide-num">1</div>
+        <span class="slide-tag">Hook + #1</span>
+        <p>Type C things in my house, by a Certified Chaos:<br><br>1. The Junk Room.<em>(was meant to be a guest room. 2019.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">2</div>
+        <p>2. The Junk Drawer.<em>(AAA battery. One AirPod. A receipt in Italian. A tooth.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">3</div>
+        <span class="slide-tag product">Product anchor</span>
+        <p>3. The Pile that "needs ironing."<em>(it's not an iron pile if you don't iron. Spray exists.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">4</div>
+        <p>4. The wardrobe with everything in it.<em>(and nothing to wear.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">5</div>
+        <span class="slide-tag signoff">Sign-off</span>
+        <p>5. The Chair™.<em>(not a mess. A wardrobe annex.) Show me yours 👇</em></p>
+      </div>
+    </div>
+    <div class="caption"><strong>Caption:</strong> Every Certified Chaos has them. Tag your worst offender 👇</div>
+    <div class="extra-row">
+      <div class="extra-block">
+        <h4>Photo plan</h4>
+        <ul>
+          <li>Slide 1: spare room shot, door cracked, slight dread</li>
+          <li>Slide 2: drawer tipped onto bed (literal)</li>
+          <li>Slide 3: clothes pile, single garment falling = motion</li>
+          <li>Slide 4: wardrobe wide shot, everything visible</li>
+          <li>Slide 5: The Chair™ low-light, slight menace</li>
+        </ul>
+      </div>
+      <div class="extra-block">
+        <h4>Why this works</h4>
+        <ul>
+          <li>Ladder small → big (drawer → pile → wardrobe → room)</li>
+          <li>Slot 3 = soft product slip in genuine use case</li>
+          <li>The Chair™ world-builds across other carousels (#6, #1)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- #4 RANDOM THOUGHTS -->
+  <div class="carousel-card">
+    <div class="carousel-meta">
+      <span class="meta-pill mp-brain">🧠 Brain Chaos</span>
+      <span class="meta-pill mp-slides">5 slides</span>
+    </div>
+    <h3>#4 — Random thoughts I have, by a Certified Chaos</h3>
+    <div class="slides-grid">
+      <div class="slide">
+        <div class="slide-num">1</div>
+        <span class="slide-tag">Hook + #1</span>
+        <p>Random thoughts I have, by a Certified Chaos:<br><br>1. "I could hike Everest."</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">2</div>
+        <p>2. "I deserve an overseas holiday."</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">3</div>
+        <p>3. "I'm going to spring clean my wardrobe."<em>(followed by deep regret 12 minutes in.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">4</div>
+        <p>4. "I have a free 10 minutes." "That's enough to steam clean the couch."</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">5</div>
+        <span class="slide-tag signoff">Sign-off</span>
+        <p>5. "If I don't see it, the problem doesn't exist."<em>Comment yours 👇</em></p>
+      </div>
+    </div>
+    <div class="caption"><strong>Caption:</strong> Random thoughts that make a Certified Chaos. Drop yours 👇 going in part 2.</div>
+    <div class="extra-row">
+      <div class="extra-block">
+        <h4>Design notes</h4>
+        <ul>
+          <li>Text-only. Quote-card style</li>
+          <li>Slide 4 = double-quote stack (two short thoughts back to back)</li>
+          <li>No product slot — pure relatability post</li>
+        </ul>
+      </div>
+      <div class="extra-block">
+        <h4>Saved for Part 2</h4>
+        <ul>
+          <li>"I'm a morning person now." — declared at 11pm.</li>
+          <li>"I should quit and move to Lisbon."</li>
+          <li>"I'll learn French this month."</li>
+          <li>"I should get a dog." — can't keep plants alive.</li>
+          <li>"I deserve this $400 jacket." — rent due Friday.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- #5 TRAVEL -->
+  <div class="carousel-card">
+    <div class="carousel-meta">
+      <span class="meta-pill mp-out">🚶 Out-of-house</span>
+      <span class="meta-pill mp-slides">6 slides</span>
+      <span class="meta-pill mp-product">Product slot · #3</span>
+    </div>
+    <h3>#5 — Travel with me, Type C edition</h3>
+    <div class="slides-grid">
+      <div class="slide">
+        <div class="slide-num">1</div>
+        <span class="slide-tag">Hook + #1</span>
+        <p>Travel with me, Type C edition. By a Certified Chaos:<br><br>1. Start packing at 11pm. Finish at 3am.</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">2</div>
+        <p>2. Forget one essential thing. Every time.<em>(this trip: phone charger. Last trip: passport, briefly.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">3</div>
+        <span class="slide-tag product">Product anchor</span>
+        <p>3. Pack the Uncrumpled.<em>(because who wants to iron on holiday?)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">4</div>
+        <p>4. Find one cafe. Eat there every day for the rest of the trip.</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">5</div>
+        <p>5. Pack 8 outfits. Wear 2.</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">6</div>
+        <span class="slide-tag signoff">Sign-off</span>
+        <p>6. Leave for the airport as late as possible. To save time.<em>(end up sprinting. Always.) Drop your travel chaos 👇</em></p>
+      </div>
+    </div>
+    <div class="caption"><strong>Caption:</strong> Travel with me, Type C edition. What's your travel chaos 👇</div>
+    <div class="extra-row">
+      <div class="extra-block">
+        <h4>Photo plan</h4>
+        <ul>
+          <li>Slide 1: suitcase + wine glass + 3am clock</li>
+          <li>Slide 2: empty charger spot in bag</li>
+          <li>Slide 3: Uncrumpled bottle in suitcase pocket (HERO product shot)</li>
+          <li>Slide 4: same croissant + coffee, repeated</li>
+          <li>Slide 5: 8 outfits laid flat → 2 worn</li>
+          <li>Slide 6: airport corridor, motion blur sprint</li>
+        </ul>
+      </div>
+      <div class="extra-block">
+        <h4>Why this works</h4>
+        <ul>
+          <li>Out-of-house surface (gap filler)</li>
+          <li>Slot 3 = product slip in legit use case (travel)</li>
+          <li>Hits Sienna persona hardest, all others can relate</li>
+          <li>"Travel with me" format = vlog energy, very share-able</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- #6 WFH -->
+  <div class="carousel-card">
+    <div class="carousel-meta">
+      <span class="meta-pill mp-brain">🧠 Brain Chaos</span>
+      <span class="meta-pill mp-slides">5 slides</span>
+      <span class="meta-pill mp-product">Product slot · #3</span>
+    </div>
+    <h3>#6 — Working from home, Certified Chaos edition</h3>
+    <div class="slides-grid">
+      <div class="slide">
+        <div class="slide-num">1</div>
+        <span class="slide-tag">Hook + #1</span>
+        <p>Working from home, Certified Chaos edition:<br><br>1. Laptop's been in 4 different rooms by 11am.</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">2</div>
+        <p>2. Camera-on meeting at 11.<em>(get dressed top half only.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">3</div>
+        <span class="slide-tag product">Product anchor</span>
+        <p>3. Pull a shirt off The Chair™. Crumpled.<em>(spray. smooth. on cam in 60 seconds.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">4</div>
+        <p>4. "Just a 5 min break."<em>(90 minutes. Two episodes. Forgot what I was doing.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">5</div>
+        <span class="slide-tag signoff">Sign-off</span>
+        <p>5. Forget to eat lunch. Ravenous at 4pm. Eat shredded cheese straight from the bag.<em>Drop your WFH chaos 👇</em></p>
+      </div>
+    </div>
+    <div class="caption"><strong>Caption:</strong> WFH Type C edition. Comment yours 👇</div>
+    <div class="extra-row">
+      <div class="extra-block">
+        <h4>Photo plan (mix of photos + text)</h4>
+        <ul>
+          <li>Slide 1: 4 micro-photos collage of laptop in 4 spots</li>
+          <li>Slide 2: blazer + pyjama bottoms shot (waist down)</li>
+          <li>Slide 3: shirt being pulled off chair + Uncrumpled bottle (HERO)</li>
+          <li>Slide 4: phone on couch, screen showing 90:00 timer</li>
+          <li>Slide 5: shredded cheese bag, fingers in (literal)</li>
+        </ul>
+      </div>
+      <div class="extra-block">
+        <h4>Why this works</h4>
+        <ul>
+          <li>Slot 3 = legit product use case (camera-on emergency)</li>
+          <li>Slot 5 = comedy peak (cheese-from-bag = peak relatability)</li>
+          <li>World-builds with The Chair™ from #3</li>
+          <li>Hits Mia, Alex, Jas personas</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- #7 SUNDAY RESET -->
+  <div class="carousel-card">
+    <div class="carousel-meta">
+      <span class="meta-pill mp-out">🚶 Out-of-house</span>
+      <span class="meta-pill mp-slides">5 slides</span>
+    </div>
+    <h3>#7 — Sunday reset, Type C edition</h3>
+    <div class="slides-grid">
+      <div class="slide">
+        <div class="slide-num">1</div>
+        <span class="slide-tag">Hook + #1</span>
+        <p>Sunday reset, Type C edition:<br><br>1. Either spring clean the entire house. Or do nothing.<em>(no in between.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">2</div>
+        <p>2. Uber Eats. Twice.</p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">3</div>
+        <p>3. Doom scroll for 3 hours.<em>(stopped enjoying it 2 hours ago.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">4</div>
+        <p>4. Start a new Netflix series at 6pm.<em>(4 episodes deep by 9.)</em></p>
+      </div>
+      <div class="slide">
+        <div class="slide-num">5</div>
+        <span class="slide-tag signoff">Sign-off</span>
+        <p>5. "I'll start Monday strong."<em>(it's 11:48pm.) Drop your Sunday 👇</em></p>
+      </div>
+    </div>
+    <div class="caption"><strong>Caption:</strong> Sunday reset, Type C edition. What's yours 👇</div>
+    <div class="extra-row">
+      <div class="extra-block">
+        <h4>Design notes</h4>
+        <ul>
+          <li>Text-led. Could add 1 photo per slide if Ann has Sunday B-roll</li>
+          <li>Slide 1 split: "spring clean" word vs "nothing" word — visually opposite</li>
+          <li>No product slot — pure relatability</li>
+        </ul>
+      </div>
+      <div class="extra-block">
+        <h4>Why this works</h4>
+        <ul>
+          <li>"I'll start Monday strong" world-builds back to #1 lies carousel</li>
+          <li>Universal Sunday energy — every persona lands</li>
+          <li>Sign-off doubles as character continuity moment</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- PRODUCTION CHECKLIST -->
+<div class="checklist">
+  <h3>Pre-post Production Checklist (every carousel)</h3>
+  <div class="checklist-item"><div class="check"></div><div>Hook slide tested at thumbnail size — readable on grid view</div></div>
+  <div class="checklist-item"><div class="check"></div><div>Max 2 lines text per slide — italics for the "reality undercut"</div></div>
+  <div class="checklist-item"><div class="check"></div><div>Slide 1 = hook + content #1 baked together (saves a slide)</div></div>
+  <div class="checklist-item"><div class="check"></div><div>Last slide = sign-off + bio nudge (rotate the bank, no repeat in same week)</div></div>
+  <div class="checklist-item"><div class="check"></div><div>Brand colours + lockup consistent (Canva master template)</div></div>
+  <div class="checklist-item"><div class="check"></div><div>Caption ≤ 2 lines + 1 CTA + #CertifiedChaos hashtag</div></div>
+  <div class="checklist-item"><div class="check"></div><div>Banned-word scrub: no "perfect/perfection/scientifically/iron" as our product</div></div>
+  <div class="checklist-item"><div class="check"></div><div>"Spray" not "steam" or "iron" when mentioning Uncrumpled</div></div>
+  <div class="checklist-item"><div class="check"></div><div>Inclusive framing — Type C inclusive of any persona that relates</div></div>
+  <div class="checklist-item"><div class="check"></div><div>Permission captured if reposting any community content</div></div>
+</div>
+
+<!-- NEXT UP -->
+<div class="next-up">
+  <h3>Next Up — Concepts in pipeline (not yet drafted)</h3>
+  <ul>
+    <li><strong>Same flight, different humans</strong> — Type C vs Type B diptych at the airport (fills 0/3 vs gap)</li>
+    <li><strong>Not all messy is lazy</strong> — Tiimo manifesto pinned-post candidate (Ann said "boring" on first pitch — needs pivot)</li>
+    <li><strong>Bag tip-out</strong> — single hero shot + 4 zoom captions (out-of-house surface)</li>
+    <li><strong>Inside my Notes app</strong> — phone screenshot grid format (visual format break)</li>
+    <li><strong>Date night prep, Type C edition</strong> — scenario carousel with product slip</li>
+    <li><strong>5 ironing wars</strong> — founder origin story (#17 from concept library)</li>
+    <li><strong>Which Certified Chaos are you?</strong> — 4-quadrant save-bait quiz</li>
+    <li><strong>11pm me vs 8am me</strong> — split brain diptych</li>
+  </ul>
+</div>
+
+<footer>
+  Uncrumpled · Carousel Production Dashboard · Locked 2026-04-29 · 7 carousels ready to ship
+</footer>
+
+</div>
+</body>
+</html>
